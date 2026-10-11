@@ -39,6 +39,35 @@ process.exit(1);
 }
 
 describe("pi_local environment diagnostics", () => {
+  it("uses managed gateway models for discovery and hello, then removes the temporary profile", async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), "pi-managed-probe-"));
+    const capture = path.join(root, "profile-path");
+    const command = path.join(root, "pi");
+    await fs.writeFile(command, [
+      "#!/usr/bin/env node",
+      "const fs = require('node:fs'); const path = require('node:path');",
+      "const dir = process.env.PI_CODING_AGENT_DIR;",
+      "const data = JSON.parse(fs.readFileSync(path.join(dir, 'models.json'), 'utf8'));",
+      "if (data.providers.paperclip.apiKey !== '${OPENAI_API_KEY}') process.exit(2);",
+      "if (!data.providers.paperclip.models.some(model => model.id === 'qwen38')) process.exit(3);",
+      "fs.writeFileSync(process.env.FIXTURE_PROFILE_CAPTURE, dir);",
+      "if (process.argv.includes('--list-models')) { console.log('provider  model\\npaperclip  qwen38'); process.exit(0); }",
+      "console.log(JSON.stringify({type:'turn_end',message:{role:'assistant',content:[{type:'text',text:'hello'}]}}));",
+    ].join("\n"), { mode: 0o755 });
+    try {
+      const result = await testEnvironment({ companyId: "company-1", adapterType: "pi_local", config: {
+        command, cwd: root, model: "paperclip/qwen38", env: {
+          OPENAI_API_KEY: "fixture-provider-key", FIXTURE_PROFILE_CAPTURE: capture,
+          PAPERCLIP_PI_PROVIDERS: JSON.stringify({ paperclip: { api: "openai-completions", baseUrl: "https://gateway.example/v1", apiKey: "${OPENAI_API_KEY}", models: [{ id: "qwen38" }] } }),
+        },
+      } });
+      expect(result.status).toBe("pass");
+      expect(result.checks.some(check => check.code === "pi_hello_probe_passed")).toBe(true);
+      const profilePath = await fs.readFile(capture, "utf8");
+      await expect(fs.access(profilePath)).rejects.toThrow();
+    } finally { await fs.rm(root, { recursive: true, force: true }); }
+  });
+
   it("passes a hello probe when model discovery and execution succeed", async () => {
     const root = path.join(
       os.tmpdir(),

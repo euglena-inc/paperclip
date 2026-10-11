@@ -3314,7 +3314,11 @@ export function createCapabilityRunnerdProviderEnvironment(input: {
       // executes it through /proc/self/fd. Anchor its closed provider package
       // lookups at the package that owns the already-authenticated bundle.
       PAPERCLIP_ACPX_BUILTIN_ROOT: resolve(dirname(sidecarPath), "../providers"),
-      PAPERCLIP_ACPX_PROVIDER_PACKAGE_ROOT: providerPackageAuthority.root,
+      // Native distributions resolve assets beside the owning manifest; the
+      // legacy Codex verifier instead resolves the workspace dependency root.
+      PAPERCLIP_ACPX_PROVIDER_PACKAGE_ROOT: ["pi", "cursor", "copilot"].includes(input.options.acpxAgent ?? "codex")
+        ? dirname(providerPackageAuthority.manifest)
+        : providerPackageAuthority.root,
       PAPERCLIP_ACPX_PROVIDER_PACKAGE_MANIFEST:
         providerPackageAuthority.manifest,
       ...(input.options.providerRecoveryPolicy ===

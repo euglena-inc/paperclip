@@ -2226,7 +2226,8 @@ export async function probeAcpxGrokInstallation(model: string): Promise<void> {
 
 /** Verify the pinned Pi closure and snapshot lease without launching a provider. */
 export async function probeAcpxPiInstallation(model: string): Promise<void> {
-  const installation = await verifyQualifiedAcpxInstallation(resolveQualifiedAcpxProfile("pi", model));
+  const { verifyPiInstallation } = await import("./pi-installation.js");
+  const installation = await verifyPiInstallation(resolveQualifiedAcpxProfile("pi", model));
   const lease = await installation.openCommand();
   await lease.close();
 }

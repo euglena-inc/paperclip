@@ -22,6 +22,7 @@ import {
 import { discoverPiModelsCached } from "./models.js";
 import { parsePiJsonl } from "./parse.js";
 import { SANDBOX_INSTALL_COMMAND } from "../index.js";
+import { preparePiRuntimeConfig } from "./runtime-config.js";
 
 function summarizeStatus(checks: AdapterEnvironmentCheck[]): AdapterEnvironmentTestResult["status"] {
   if (checks.some((check) => check.level === "error")) return "fail";
@@ -79,6 +80,18 @@ function buildPiModelDiscoveryFailureCheck(message: string): AdapterEnvironmentC
 }
 
 export async function testEnvironment(
+  ctx: AdapterEnvironmentTestContext,
+): Promise<AdapterEnvironmentTestResult> {
+  const config = parseObject(ctx.config);
+  const prepared = await preparePiRuntimeConfig({ env: normalizeEnv(config.env) });
+  try {
+    return await testPreparedEnvironment({ ...ctx, config: { ...config, env: prepared.env } });
+  } finally {
+    await prepared.cleanup();
+  }
+}
+
+async function testPreparedEnvironment(
   ctx: AdapterEnvironmentTestContext,
 ): Promise<AdapterEnvironmentTestResult> {
   const checks: AdapterEnvironmentCheck[] = [];

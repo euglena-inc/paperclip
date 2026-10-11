@@ -1933,6 +1933,20 @@ it("uses file-backed AWS workload identity without forwarding access keys or Pap
   expect(environment.PAPERCLIP_NATIVE_MCP_TOKEN).toBeUndefined();
 });
 
+it("binds local Native Pi assets to the package that owns its manifest", () => {
+  const runnerRoot = resolve(fileURLToPath(new URL("../..", import.meta.url)));
+  const environment = createCapabilityRunnerdProviderEnvironment({
+    provider: "acpx",
+    options: { provider: "acpx", acpxAgent: "pi", environment: { PATH: "/bin" } },
+    identity: { runnerInstanceId: "runner-1", environmentLeaseId: "lease-1", runId: "run-1",
+      normalizedSessionId: "session-1", turnId: "turn-1", itemId: "item-1" },
+    codexHome: "/isolated/home", runtimeContextPath: "/isolated/context.json", hasRuntimeContext: false,
+    acpxSidecarPath: join(runnerRoot, "dist/cli/acpx-runtime-sidecar.cjs"),
+  });
+  expect(environment.PAPERCLIP_ACPX_PROVIDER_PACKAGE_ROOT).toBe(runnerRoot);
+  expect(environment.PAPERCLIP_ACPX_PROVIDER_PACKAGE_MANIFEST).toBe(join(runnerRoot, "package.json"));
+});
+
 it.each([
   { agent: "cursor" as const, allowed: ["CURSOR_API_KEY", "CURSOR_AUTH_TOKEN"],
     denied: ["COPILOT_GITHUB_TOKEN", "GH_TOKEN", "GITHUB_TOKEN", "OPENROUTER_API_KEY", "ANTHROPIC_API_KEY", "OPENAI_API_KEY"] },

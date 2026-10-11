@@ -1063,9 +1063,9 @@ describe("qualified ACPX runtime sidecar", () => {
     },
   );
 
-  it.each(["off", "low", "high", "max"])(
-    "accepts Pi thinking level %s through the actual session.open dispatcher",
-    async (piThinkingLevel) => {
+  it.each([["off", ""], ["off", "Test instructions"], ["low", "Test instructions"], ["high", "Test instructions"], ["max", "Test instructions"]])(
+    "accepts Pi thinking level %s with instructions %j through the actual session.open dispatcher",
+    async (piThinkingLevel, systemInstructions) => {
       const sidecar = startSidecar();
       const model = "custom-provider/caller-selected-model";
       sidecar.write(initializeRequest(1, "pi", model));
@@ -1073,7 +1073,7 @@ describe("qualified ACPX runtime sidecar", () => {
       sidecar.write({
         protocolVersion: ACPX_SIDECAR_PROTOCOL_VERSION, id: 2, command: "session.open",
         params: { runtimeDirectory: "/unused", workingDirectory: "/unused", normalizedSessionId: "pi-open",
-          agent: "pi", model, permissionMode: "deny-all", piThinkingLevel, systemInstructions: "Test instructions", tools: [] },
+          agent: "pi", model, permissionMode: "deny-all", piThinkingLevel, systemInstructions, tools: [] },
       });
       // The host's policy gate runs after parsing and before installation or
       // credentials. This proves the real process crosses the open boundary
@@ -1088,6 +1088,7 @@ describe("qualified ACPX runtime sidecar", () => {
     ["pi", { piThinkingLevel: "medium" }, "Pi thinking level"],
     ["codex", { piThinkingLevel: "low" }, "only supported by Pi"],
     ["pi", { piThinkingLevel: "low", unknownOption: true }, "unsupported field"],
+    ["pi", { piThinkingLevel: "off", systemInstructions: " " }, "systemInstructions is required"],
   ])("rejects invalid %s session.open fields before launch", async (agent, fields, message) => {
     const sidecar = startSidecar();
     const model = "caller-selected-model";

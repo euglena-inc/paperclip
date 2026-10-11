@@ -7,6 +7,7 @@ dist-preview/
 dist-flow-preview/
 server/ui-dist/
 packages/paperclip-runner/runner/target/
+packages/paperclip-runner/provider-assets/
 ui/storybook-static/
 .env
 *.tsbuildinfo

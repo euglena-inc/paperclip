@@ -1238,7 +1238,7 @@ function parseOpenParams(
     ...(piThinkingLevel ? { piThinkingLevel } : {}),
     permissionModePinned: value.permissionModePinned === true,
     ...(value.providerPolicy == null ? {} : { providerPolicy: parseProviderPolicy(value.providerPolicy) }),
-    systemInstructions: boundedText(
+    systemInstructions: value.systemInstructions === "" ? "" : boundedText(
       value.systemInstructions,
       "systemInstructions",
       1024 * 1024,

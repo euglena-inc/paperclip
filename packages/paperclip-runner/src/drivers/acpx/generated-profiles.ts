@@ -22,12 +22,12 @@ export const QUALIFIED_ACPX_PROFILE_DATA = {
     "protocolVersion": 1,
     "acpxVersion": "0.13.1",
     "agent": "pi",
-    "agentProfileVersion": 22,
+    "agentProfileVersion": 23,
     "agentServerPackage": "pi-acp",
     "agentServerVersion": "0.0.33",
     "agentRuntimePackage": "@earendil-works/pi-coding-agent",
     "agentRuntimeVersion": "1.0.0",
-    "commandDigest": "sha256:e92078bee3c23bec4100aa589013a44613d054cd686826534025d8019e9f39a9",
+    "commandDigest": "sha256:b675c55c2ce99a3ddd82eac89eb65f02ba32aaa3dd02ddc1cfc1f2571e3fe9ef",
     "permissionPolicy": "interactive"
   },
   "cursor": {
