@@ -2,6 +2,9 @@
 
 Guidance for human and AI contributors working in this repository.
 
+For this Euglena fork, also follow [the downstream core and upgrade rules](doc/euglena/CORE-RULES.md).
+They define the extension boundaries, protected upstream contracts, and release merge policy.
+
 ## 1. Purpose
 
 Paperclip is a control plane for AI-agent companies.
