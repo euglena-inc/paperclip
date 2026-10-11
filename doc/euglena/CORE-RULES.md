@@ -112,12 +112,30 @@ Base for the initial gateway work: upstream commit
 | --- | --- | --- | --- |
 | Pi and Grok compatible gateway routing | Upstream stores Chat gateways but excludes these harnesses from managed routing. A catalog-only plugin cannot project the selected secret through the native Runner launch boundary. | Shared compatibility/model IDs; focused server projection; existing UI picker and Runner choices; ACPX environment allowlists. | Gateway tests cover catalog/manual IDs, isolation, authorization/revocation, protocol rejection, Pi creation, and Runner forwarding. Remove when upstream supports the same paths and these regressions pass. |
 | Fork maintenance policy | The official repository does not define this fork's branch and merge policy. | This document and a short entrypoint link in `AGENTS.md`. | Retain as local policy; reconcile references when upstream contracts change. |
+| Pi launch and setup repairs | Managed model declarations must reach the setup probe; Native Pi must use its pinned distribution verifier and the package directory that owns its manifest. | Pi setup wrapper, installation probe, native package binding, and generated profile v23. SDK and ACP wrapper versions stay pinned. | Targeted regressions and live tasks establish the repaired boundaries. Remove each repair when upstream supplies equivalent behavior. |
 
 Runtime NewAPI connections are instance configuration, not a Git patch. Their
 availability and credentials must be configured on each deployment. Never ship
 the operator's database or credential values as part of the fork.
 
+## Pi runtime ownership
+
+Paperclip's `pi_local` adapter and native Runner Pi belong to Paperclip. Native
+Runner Pi uses its own pinned SDK, ACP wrapper, verified assets, configuration,
+and recovery identity. A Pi runtime embedded by Eugene or eugene-core is a
+separate ownership boundary. Do not replace one with the other or share their
+session directories, provider configuration files, or lifecycle controllers.
+Integrate eugene-core through explicit plugin/adapter contracts; keep memory and
+outcome-ledger state separate from Paperclip's provider runtime state. Verify
+which component actually owns execution before claiming an embedded Pi exists.
+
 ## Evidence before publication
+
+Validate a stable source snapshot and record its commit. Finish executable
+source edits before the final wide check: a long-running test process can retain
+old transforms while later files see new assertions. After an edit, rerun the
+affected checks at their original strength; do not attribute an earlier run to
+the new snapshot.
 
 Compilation is not proof of execution. Keep these claims distinct:
 
