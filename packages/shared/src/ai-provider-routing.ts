@@ -83,7 +83,7 @@ export function aiRoutingHarness(
   if (adapter !== "paperclip_runner") return adapter;
   const runner =
     provider === "acpx" &&
-    (acpxAgent === "claude" || acpxAgent === "codex" || acpxAgent === "grok" || acpxAgent === "pi")
+    (acpxAgent === "claude" || acpxAgent === "grok" || acpxAgent === "pi")
       ? acpxAgent
       : provider;
   return (
