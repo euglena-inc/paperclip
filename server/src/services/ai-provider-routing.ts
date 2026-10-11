@@ -71,6 +71,38 @@ export function managedProviderRouting(
     // Hermes strips OPENAI_API_KEY from terminal children. A custom variable
     // would expose the reusable gateway key to task-controlled shell commands.
     hermesConfig = `model:\n  provider: ${route.kind === "openrouter" ? '"openrouter"' : '"custom"'}\n  default: ${JSON.stringify(model)}\n  base_url: ${JSON.stringify(baseUrl)}\n  api_mode: "chat_completions"\n${route.auth === "none" ? "" : '  api_key: "${OPENAI_API_KEY}"\n'}`;
+  } else if (harness === "pi_local") {
+    // Pi selects a model by the exact provider/model pair in its managed
+    // models.json. The provider config contains only an env-var reference;
+    // the credential itself stays in the execution environment.
+    env.OPENAI_API_KEY = route.auth === "none" ? "paperclip-no-auth" : credential;
+    const id = model.replace(/^paperclip\//, "");
+    const models = route.models.some((entry) => entry.id === id) || !id
+      ? route.models
+      : [...route.models, { id }];
+    env.PAPERCLIP_PI_PROVIDERS = JSON.stringify({
+      paperclip: {
+        name: "Paperclip connection",
+        baseUrl,
+        api: "openai-completions",
+        apiKey: "${OPENAI_API_KEY}",
+        models: models.map((entry) => ({
+          id: entry.id,
+          name: entry.label ?? entry.id,
+          reasoning: false,
+          input: ["text"],
+          contextWindow: 32_768,
+          maxTokens: 8_192,
+        })),
+      },
+    });
+    config.model = aiRoutingModel(route, harness, model);
+  } else if (harness === "grok_local") {
+    // Grok Build's custom-model endpoint reads /models from this base URL and
+    // uses XAI_API_KEY as the bearer credential for discovery and inference.
+    env.GROK_MODELS_BASE_URL = baseUrl;
+    env.XAI_API_KEY = route.auth === "none" ? "paperclip-no-auth" : credential;
+    config.model = model;
   }
   return { env, config, codexConfig, hermesConfig };
 }

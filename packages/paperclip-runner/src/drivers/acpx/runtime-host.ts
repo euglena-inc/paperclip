@@ -1,4 +1,4 @@
-import { piProviderConfiguration } from "./pi-provider-config.js";
+import { acpxProviderConfigurationDigest } from "./environment.js";
 import { withAcpxTurnCancellation } from "./turn-cancellation.js";
 import { resolveAcpxProviderMode } from "./provider-mode.js";
 import { resolvePiThinkingLevel, type PiThinkingLevel } from "./pi-thinking.js";
@@ -346,7 +346,7 @@ export class AcpxRuntimeHost {
           workingDirectory: options.workingDirectory,
           profile,
           requestedModel: options.model,
-          ...(options.agent === "pi" ? { providerConfigurationDigest: piProviderConfiguration(options.environment)?.digest } : {}),
+          providerConfigurationDigest: acpxProviderConfigurationDigest(options.agent, options.environment),
           permissionMode: options.permissionMode,
           mode: resolveAcpxProviderMode(options.agent, options.mode),
           piThinkingLevel: resolvePiThinkingLevel(options.agent, options.piThinkingLevel),

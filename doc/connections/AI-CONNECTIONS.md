@@ -596,8 +596,10 @@ credentials belong to the connection; the model belongs to the agent.
 | Codex legacy and Codex New Runner (app-server) | OpenRouter; custom/local OpenAI Responses endpoints |
 | Claude legacy and Claude New Runner (ACPX) | OpenRouter; custom/local Anthropic Messages; Bedrock API key |
 | OpenCode legacy and New Runner | OpenRouter; custom/local Chat Completions |
+| Pi local and Paperclip Runner (ACPX Pi) | Custom/local Chat Completions |
+| Grok Build and Paperclip Runner (ACPX Grok) | Native xAI; custom/local Chat Completions |
 | Hermes local | OpenRouter; custom/local Chat Completions |
-| Gemini CLI, Grok | Their native API connections; custom routes are not advertised |
+| Gemini CLI | Native Google API connection; custom routes are not advertised |
 
 Migration `0306` adds Google to both account-default provider constraints. Local
 Gemini connections seed the API-key auth choice in their disposable home before
@@ -605,7 +607,7 @@ environment probes and task execution. The settings file contains no credential.
 
 OpenClaw Gateway, Hermes Gateway, Claude Managed, AWS AgentCore, Process, HTTP,
 and legacy `acpx_local` are excluded: external agents retain their own model
-configuration, and `acpx_local` is retired. Cursor/Pi/Copilot custom routing,
+configuration, and `acpx_local` is retired. Cursor/Copilot custom routing,
 Vertex, ambient AWS identity, arbitrary authentication headers, and automatic
 catalog discovery for custom gateways are not part of this implementation.
 
@@ -662,6 +664,20 @@ boundaries explicitly allow only the corresponding provider credential and
 routing fields. Keys remain outside model-issued command environments on the
 new Codex runner. Hermes custom endpoints use an isolated `config.yaml` with an
 environment reference for the key.
+Grok custom model routes project `GROK_MODELS_BASE_URL` and the connection key
+through `XAI_API_KEY`; the ACPX Runner allowlist carries both to Grok Build.
+The configured Grok destination is included in the ACPX recovery identity;
+ambient host routing is not inherited.
+
+Pi custom Chat Completions routes generate an isolated `PAPERCLIP_PI_PROVIDERS`
+entry whose `apiKey` uses the native `${OPENAI_API_KEY}` template. Local Pi writes it to a
+temporary managed `models.json`; the Runner ACPX sidecar binds that environment
+key to its Pi session. Manual IDs are added to the temporary model table even
+when absent from the saved catalog. Runner Pi defaults to thinking Off for these
+text-only declarations; an explicit non-Off level is rejected with an actionable
+configuration error. Generated Pi model entries use conservative text-only
+defaults (32k context, 8k output, reasoning disabled) because the connection
+catalog stores model IDs and labels, not per-model capability metadata.
 
 Primary configuration references consulted:
 [Codex custom providers](https://developers.openai.com/codex/config-advanced/),

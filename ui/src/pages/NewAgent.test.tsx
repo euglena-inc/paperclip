@@ -785,6 +785,29 @@ describe("New agent setup", () => {
     expect(container.textContent).toContain("Agent quota exceeded");
     expect(container.textContent).toContain("Could not remove an unused setup credential");
   });
+  it.each([["pi_local", "codex"], ["paperclip_runner", "pi"]])("hires %s through an existing gateway without subscription login or inline keys", async (adapter, runnerProvider) => {
+    const connectionId = "11111111-1111-4111-8111-111111111111";
+    const grantId = "22222222-2222-4222-8222-222222222222";
+    managedApi.list.mockResolvedValue({ currentUserId: "user-1", canManageConnections: true, connections: [{ id: connectionId, grantId, companyId: "company-1", name: "Fixture gateway", provider: "openai", method: "api_key", ownership: "shared", status: "connected", isDefault: false, routing: { kind: "gateway", protocol: "chat", auth: "bearer", baseUrl: "https://gateway.example/v1", models: [{ id: "qwen38", label: "Qwen38" }] } }] } as never);
+    await render(adapter, runnerProvider);
+    expect(container.textContent).not.toContain("Subscription");
+    const control = container.querySelector('[role="combobox"][aria-label="Connection"]')!;
+    await act(async () => control.dispatchEvent(new KeyboardEvent("keydown", { key: "ArrowDown", bubbles: true })));
+    await settle();
+    const option = [...document.querySelectorAll('[role="option"]')].find(node => node.textContent?.includes("Fixture gateway"))!;
+    expect(option).toBeTruthy();
+    await act(async () => (option as HTMLElement).click());
+    await settle();
+    await fill("Model", "paperclip/qwen38");
+    await click("Run test");
+    await click("Finish setup");
+    const payload = api.hire.mock.calls[0][1];
+    expect(payload.runtimeConfig.aiConnection).toMatchObject({ mode: "shared", provider: "openai", connectionId, grantId });
+    expect(payload.adapterConfig.model).toBe("paperclip/qwen38");
+    if (adapter === "paperclip_runner") expect(payload.adapterConfig).toMatchObject({ provider: "acpx", acpxAgent: "pi", piThinkingLevel: "off" });
+    expect(secrets.create).not.toHaveBeenCalled();
+    expect(managedApi.create).not.toHaveBeenCalled();
+  });
   it("requires an explicit provider/model for Pi", async () => {
     await render();
     await click("Run test");

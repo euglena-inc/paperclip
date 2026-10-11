@@ -80,10 +80,25 @@ export function piProviderConfiguration(environment?: NodeJS.ProcessEnv): {
   const names = new Set<string>();
   const credential = (value: unknown) => {
     if (typeof value !== "string" || value.trimStart().startsWith("!")) throw invalid();
-    if (/^[A-Z][A-Z0-9_]{0,127}$/.test(value)) {
-      if (/^(?:PAPERCLIP_|NODE_|NPM_|npm_)/.test(value)
-        || RESERVED_PI_CREDENTIAL_NAMES.has(value)) throw invalid();
-      names.add(value);
+    const references: string[] = [];
+    // Native Pi 1.x uses $VAR / ${VAR} templates. Preserve escaped dollars and
+    // inspect every real reference before the credential environment is bound.
+    for (let index = 0; index < value.length;) {
+      if (value[index] !== "$") { index += 1; continue; }
+      if (value[index + 1] === "$" || value[index + 1] === "!") { index += 2; continue; }
+      const tail = value.slice(index + 1);
+      const match = tail.match(/^\{([A-Za-z_][A-Za-z0-9_]*)\}/) ?? tail.match(/^([A-Za-z_][A-Za-z0-9_]*)/);
+      if (!match) { index += 1; continue; }
+      references.push(match[1]);
+      index += match[0].length + 1;
+    }
+    // Retain recognition of legacy bare references for existing bindings.
+    if (/^[A-Z][A-Z0-9_]{0,127}$/.test(value)) references.push(value);
+    for (const name of references) {
+      if (!/^[A-Z][A-Z0-9_]{0,127}$/.test(name)
+        || /^(?:PAPERCLIP_|NODE_|NPM_|npm_)/.test(name)
+        || RESERVED_PI_CREDENTIAL_NAMES.has(name)) throw invalid();
+      names.add(name);
     }
   };
   const inspect = (value: unknown, depth = 0): void => {

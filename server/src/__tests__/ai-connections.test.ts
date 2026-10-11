@@ -928,6 +928,34 @@ console.log(JSON.stringify({ type: "result", subtype: "success", result: "hello"
     await db.update(connectionGrants).set({ status: "revoked" }).where(eq(connectionGrants.id, saved.grantId));
     await expect(service.select({ ...input, binding: selected, userId: "alice", adapterType: "codex_local", model: "openai/gpt-5.4" })).rejects.toThrow("Reconnect");
   });
+  it("projects a vaulted gateway into local and Runner Pi/Grok without host credential fallback", async () => {
+    const routing = { kind: "gateway", protocol: "chat", auth: "bearer", baseUrl: "https://gateway.example/v1", models: [] } as const;
+    const saved = await service.save(companyId, "alice", { provider: "openai", method: "api_key", name: "Pi/Grok gateway", ownership: "personal", apiKey: "fixture", allAgents: true, agentIds: [], routing: { ...routing, models: [] } }, "fixture-gateway-credential");
+    const selected = { provider: "openai", method: "api_key", mode: "delegated", ...saved } as const;
+    for (const agent of ["pi", "grok"] as const) {
+      for (const adapterType of [`${agent}_local`, "paperclip_runner"]) {
+        const runtime = await prepareManagedAiRuntime(db, { companyId, agentId, responsibleUserId: "alice", binding: selected, adapterType,
+          config: { provider: "acpx", acpxAgent: agent, model: agent === "pi" ? "paperclip/manual-model" : "manual-model", env: { OPENAI_API_KEY: "ambient", XAI_API_KEY: "ambient" } } });
+        try {
+          if (agent === "pi") {
+            expect(runtime.config.env.OPENAI_API_KEY).toBe("fixture-gateway-credential");
+            const providers = JSON.parse(String(runtime.config.env.PAPERCLIP_PI_PROVIDERS));
+            expect(providers.paperclip.models).toEqual([expect.objectContaining({ id: "manual-model" })]);
+            expect(runtime.config.env.PAPERCLIP_PI_PROVIDERS).not.toContain("fixture-gateway-credential");
+            if (adapterType === "paperclip_runner") expect(runtime.config.piThinkingLevel).toBe("off");
+          } else {
+            expect(runtime.config.env.XAI_API_KEY).toBe("fixture-gateway-credential");
+            expect(runtime.config.env.OPENAI_API_KEY).toBe("");
+            expect(runtime.config.env.GROK_MODELS_BASE_URL).toBe(routing.baseUrl);
+          }
+        } finally { await runtime.cleanup(); }
+      }
+    }
+    await expect(prepareManagedAiRuntime(db, { companyId, agentId, responsibleUserId: "alice", binding: selected, adapterType: "paperclip_runner", config: { provider: "acpx", acpxAgent: "pi", model: "paperclip/manual-model", piThinkingLevel: "low" } })).rejects.toThrow("thinking level to Off");
+    await expect(service.select({ ...input, binding: selected, userId: "bob", adapterType: "pi_local" })).rejects.toThrow("not shared");
+    await db.update(connectionGrants).set({ status: "revoked" }).where(eq(connectionGrants.id, saved.grantId));
+    await expect(service.select({ ...input, binding: selected, userId: "alice", adapterType: "grok_local" })).rejects.toThrow("Reconnect");
+  });
   it("reconnects JSONB routing without changing its identity or access", async () => {
     const routing = { kind: "gateway", protocol: "responses", auth: "bearer", baseUrl: "https://gateway.example/v1", models: [{ id: "gateway-model" }] } as const;
     const input = { provider: "openai", method: "api_key", name: "Reconnect gateway", ownership: "personal", allAgents: false, agentIds: [agentId], routing: { ...routing, models: [...routing.models] } } as const;

@@ -212,7 +212,11 @@ impl AcpxSidecarTransport {
                 "CODEX_API_KEY",
                 "PAPERCLIP_AI_PROVIDER_KEY",
             ],
-            "grok" => &["XAI_API_KEY", "PAPERCLIP_ACPX_GROK_AUTH_JSON_SECRET"],
+            "grok" => &[
+                "XAI_API_KEY",
+                "GROK_MODELS_BASE_URL",
+                "PAPERCLIP_ACPX_GROK_AUTH_JSON_SECRET",
+            ],
             "pi" => &[],
             "cursor" => &["CURSOR_API_KEY", "CURSOR_AUTH_TOKEN"],
             "copilot" => &["COPILOT_GITHUB_TOKEN"],

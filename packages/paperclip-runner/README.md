@@ -101,7 +101,7 @@ Built-in providers can use their usual API-key environment variables. Custom Pi
 providers are supported through `PAPERCLIP_PI_PROVIDERS`: a JSON object containing
 the native `models.json` provider entries (without the outer `providers` key).
 The runner writes that configuration to the private Pi agent directory and binds
-its digest to recovery. API-key and header environment references are forwarded
+its digest to recovery. Native `$VAR` / `${VAR}` API-key and header environment references are forwarded
 only from the explicit run environment; command-based credential resolution is
 unsupported. Select the provider/model ID explicitly in the agent configuration.
 The bundled ACPX package tests exercise unlisted model selection, rejection,

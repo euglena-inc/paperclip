@@ -52,6 +52,17 @@ describe("Pi caller-selected providers and models", () => {
     }
   });
 
+  it("binds native Pi templates without embedding key values or forwarding escaped references", () => {
+    const providers = { custom: { apiKey: "${OPENAI_API_KEY}", headers: { Authorization: "Bearer $CUSTOM_MODEL_KEY", literal: "$$UNBOUND_KEY", escapedThenEnv: "$$${SECOND_MODEL_KEY}" } } };
+    const configuration = piProviderConfiguration({ PAPERCLIP_PI_PROVIDERS: JSON.stringify(providers), OPENAI_API_KEY: "fixture-secret" })!;
+    expect(configuration.credentialNames).toEqual(["OPENAI_API_KEY", "CUSTOM_MODEL_KEY", "SECOND_MODEL_KEY"]);
+    expect(configuration.json).not.toContain("fixture-secret");
+    expect(JSON.parse(configuration.json).providers.custom.apiKey).toBe("${OPENAI_API_KEY}");
+    for (const apiKey of ["${PAPERCLIP_API_KEY}", "$NODE_OPTIONS", "Bearer ${PATH}", "${AWS_SECRET_ACCESS_KEY}"]) {
+      expect(() => piProviderConfiguration({ PAPERCLIP_PI_PROVIDERS: JSON.stringify({ custom: { apiKey } }) })).toThrow();
+    }
+  });
+
   it("binds custom-provider configuration and model identity across recovery", async () => {
     const root = await mkdtemp(join(tmpdir(), "pi-model-recovery-"));
     try {

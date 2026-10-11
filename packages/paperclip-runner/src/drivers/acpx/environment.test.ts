@@ -3,9 +3,19 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 afterEach(() => vi.unstubAllEnvs());
 
-import { ACPX_CREDENTIAL_BINDING_ENV, createAcpxCredentialBinding, createAcpxSidecarHostEnvironment, createSanitizedAcpxSpawnInput } from "./environment.js";
+import { ACPX_CREDENTIAL_BINDING_ENV, acpxProviderConfigurationDigest, createAcpxCredentialBinding, createAcpxSidecarHostEnvironment, createSanitizedAcpxSpawnInput } from "./environment.js";
 
 describe("ACPX launch environment", () => {
+  it("binds the explicit Grok destination to recovery and never inherits an ambient gateway", () => {
+    vi.stubEnv("GROK_MODELS_BASE_URL", "https://ambient.example/v1");
+    expect(createSanitizedAcpxSpawnInput(undefined, "grok").env).not.toHaveProperty("GROK_MODELS_BASE_URL");
+    expect(acpxProviderConfigurationDigest("grok")).toBeUndefined();
+    const first = acpxProviderConfigurationDigest("grok", { GROK_MODELS_BASE_URL: "https://first.example/v1", XAI_API_KEY: "fixture" });
+    expect(first).toMatch(/^sha256:[a-f0-9]{64}$/);
+    expect(acpxProviderConfigurationDigest("grok", { GROK_MODELS_BASE_URL: "https://first.example/v1/", XAI_API_KEY: "rotated" })).toBe(first);
+    expect(acpxProviderConfigurationDigest("grok", { GROK_MODELS_BASE_URL: "https://other.example/v1" })).not.toBe(first);
+  });
+
   it("excludes general IAM from the Pi sidecar and launch, including selected task values", () => {
     const iam = { AWS_ACCESS_KEY_ID: "general-key", AWS_SECRET_ACCESS_KEY: "general-secret", AWS_SESSION_TOKEN: "general-session" };
     const source = { ...iam, ...configuredEnvironmentProjection({ ...iam, CUSTOM_SETTING: "allowed" }), AWS_BEARER_TOKEN_BEDROCK: "provider-key" };

@@ -1,5 +1,6 @@
+import { createHash } from "node:crypto";
 import { CONFIGURED_ENVIRONMENT_KEYS, configuredEnvironment, configuredEnvironmentKeys } from "../../configured-environment.js";
-import { PI_CREDENTIAL_NAMES, PI_GENERAL_IAM_CREDENTIAL_NAMES, piCredentialNames } from "./pi-provider-config.js";
+import { PI_CREDENTIAL_NAMES, PI_GENERAL_IAM_CREDENTIAL_NAMES, piCredentialNames, piProviderConfiguration } from "./pi-provider-config.js";
 import type { QualifiedAcpxAgent } from "./qualified-profiles.js";
 
 export const ACPX_CREDENTIAL_BINDING_ENV = "PAPERCLIP_ACPX_CREDENTIAL_BINDING";
@@ -12,6 +13,14 @@ export const ACPX_CREDENTIAL_NAMES: Readonly<Record<QualifiedAcpxAgent, readonly
   codex: ["OPENAI_API_KEY", "CODEX_API_KEY", "PAPERCLIP_AI_PROVIDER_KEY"],
 };
 export const CLAUDE_ROUTING_ENV_KEYS = ["ANTHROPIC_BASE_URL", "CLAUDE_CODE_USE_BEDROCK", "AWS_REGION", "AWS_DEFAULT_REGION", "AWS_EC2_METADATA_DISABLED", "CLAUDE_CODE_DISABLE_NONESSENTIAL_TRAFFIC", "ANTHROPIC_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL"] as const;
+
+/** Bind custom provider destinations to recovery without retaining credential values. */
+export function acpxProviderConfigurationDigest(agent: QualifiedAcpxAgent, environment?: NodeJS.ProcessEnv): string | undefined {
+  if (agent === "pi") return piProviderConfiguration(environment)?.digest;
+  const baseUrl = agent === "grok" ? environment?.GROK_MODELS_BASE_URL : undefined;
+  if (!baseUrl) return undefined;
+  return `sha256:${createHash("sha256").update(JSON.stringify({ modelsBaseUrl: baseUrl.replace(/\/+$/, "") })).digest("hex")}`;
+}
 
 /** Keep the task projection consistent when excluding general IAM from Pi. */
 function removePiIamCredentials(environment: NodeJS.ProcessEnv): void {
@@ -125,6 +134,7 @@ export function createSanitizedAcpxSpawnInput(
     "RUST_BACKTRACE",
     "PAPERCLIP_NATIVE_MCP_NAME",
     "PAPERCLIP_NATIVE_MCP_URL",
+    ...(agent === "grok" && environment !== undefined ? ["GROK_MODELS_BASE_URL"] : []),
     ...(environment === undefined ? [] : ["PAPERCLIP_AGENT_KEY_ID", "PAPERCLIP_AGENT_PUBLIC_KEY", "PAPERCLIP_AGENT_PRIVATE_KEY"]),
     ...credentialNames,
     ...(agent === "claude" ? CLAUDE_ROUTING_ENV_KEYS : []),

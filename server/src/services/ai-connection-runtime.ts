@@ -29,7 +29,9 @@ export function isAiConnectionBusy(error: unknown): error is HttpError {
 // Blank values intentionally override inherited credentials in CLI child environments.
 export const AI_AUTH_ENV_KEYS = [
   "PAPERCLIP_AI_PROVIDER_KEY", "PAPERCLIP_AI_PROVIDER_URL", "PAPERCLIP_CODEX_PROVIDERS",
+  "PAPERCLIP_PI_PROVIDERS",
   "GEMINI_API_KEY", "GOOGLE_API_KEY", "GOOGLE_GEMINI_BASE_URL", "GOOGLE_GENAI_USE_VERTEXAI",
+  "GROK_MODELS_BASE_URL",
   "HERMES_HOME", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN", "AWS_BEARER_TOKEN_BEDROCK", "AWS_PROFILE", "AWS_DEFAULT_PROFILE", "AWS_SHARED_CREDENTIALS_FILE", "AWS_CONFIG_FILE", "AWS_WEB_IDENTITY_TOKEN_FILE", "AWS_ROLE_ARN", "AWS_CONTAINER_CREDENTIALS_RELATIVE_URI", "AWS_CONTAINER_CREDENTIALS_FULL_URI",
   "ANTHROPIC_BEDROCK_BASE_URL", "ANTHROPIC_MODEL", "ANTHROPIC_DEFAULT_OPUS_MODEL", "ANTHROPIC_DEFAULT_SONNET_MODEL", "ANTHROPIC_DEFAULT_HAIKU_MODEL", "CLAUDE_CODE_SUBAGENT_MODEL",
 
@@ -235,7 +237,8 @@ export async function prepareManagedAiRuntime(
     "CLAUDE_CODE_USE_VERTEX",
     "CLAUDE_CODE_USE_FOUNDRY",
     "PAPERCLIP_OPENCODE_PROVIDERS",
-    "PAPERCLIP_AI_PROVIDER_URL", "PAPERCLIP_CODEX_PROVIDERS", "OPENCODE_CONFIG_CONTENT", "OPENCODE_CONFIG", "OPENCODE_CONFIG_DIR", "GOOGLE_GEMINI_BASE_URL", "ANTHROPIC_BEDROCK_BASE_URL",
+    "PAPERCLIP_PI_PROVIDERS",
+    "PAPERCLIP_AI_PROVIDER_URL", "PAPERCLIP_CODEX_PROVIDERS", "OPENCODE_CONFIG_CONTENT", "OPENCODE_CONFIG", "OPENCODE_CONFIG_DIR", "GOOGLE_GEMINI_BASE_URL", "GROK_MODELS_BASE_URL", "ANTHROPIC_BEDROCK_BASE_URL",
   ]) {
     if (configuredEnv[key])
       throw unprocessable(
@@ -273,6 +276,11 @@ export async function prepareManagedAiRuntime(
     const credentialRef = selection.grant.credentialSecretRefs.find((ref) => ref.configPath === "ai.credential");
     const routing = aiConnectionMetadataSchema.parse(selection.connection.config.ai).routing;
     const noAuth = routing?.auth === "none";
+    if (routing && harness === "pi_local" && input.adapterType === "paperclip_runner" &&
+      input.config.piThinkingLevel !== undefined && input.config.piThinkingLevel !== "off") {
+      throw unprocessable("This gateway has no Pi reasoning metadata. Set Pi thinking level to Off.",
+        { code: "ai_connection_incompatible" });
+    }
     if (!noAuth && !credentialRef) throw unprocessable("The selected AI credential is unavailable");
     const readFreshness = async () => {
       if (!credentialRef) return undefined;
@@ -377,6 +385,8 @@ export async function prepareManagedAiRuntime(
       config: {
         ...input.config,
         ...projected?.config,
+        ...(routing && harness === "pi_local" && input.adapterType === "paperclip_runner"
+          ? { piThinkingLevel: "off" } : {}),
         ...(routing ? { managedAiRouting: routing } : {}),
         env,
         managedAiConnection: { ...attribution, identity, sessionIdentity },

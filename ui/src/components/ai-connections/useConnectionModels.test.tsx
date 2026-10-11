@@ -106,3 +106,12 @@ it("exposes loading and allows retry after a catalog failure", async () => {
   await vi.waitFor(() => expect(result?.models).toEqual(catalog));
   expect(result?.error).toBeNull();
 });
+
+it("uses the exact saved Pi gateway IDs and prefixes only the transport provider", async () => {
+  const gateway: AiManagedConnectionSummary = { ...account, provider: "openai", routing: { kind: "gateway", protocol: "chat", auth: "bearer", baseUrl: "https://gateway.example/v1", models: [{ id: "qwen38", label: "Qwen38" }] } };
+  await mount([gateway], "pi_local", { ...binding, provider: "openai" });
+  expect(result?.models).toEqual([{ id: "paperclip/qwen38", label: "Qwen38" }]);
+  expect(result?.resolveModel("paperclip/qwen38")).toBe("paperclip/qwen38");
+  expect(result?.resolveModel("other/model")).toBe("paperclip/other/model");
+  expect(agentsApi.adapterModels).not.toHaveBeenCalled();
+});

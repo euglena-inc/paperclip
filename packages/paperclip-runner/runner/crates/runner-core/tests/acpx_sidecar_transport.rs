@@ -288,6 +288,8 @@ fn assigned_gateway_binding_reaches_qualified_sidecar_without_unrelated_secrets(
             )
             .envs(
                 [
+                    "XAI_API_KEY",
+                    "GROK_MODELS_BASE_URL",
                     "ANTHROPIC_API_KEY",
                     "CLAUDE_CODE_OAUTH_TOKEN",
                     "OPENAI_API_KEY",
@@ -312,7 +314,7 @@ fn assigned_gateway_binding_reaches_qualified_sidecar_without_unrelated_secrets(
         assert!(status.success(), "isolated gateway environment test failed");
         return;
     }
-    for agent in ["claude", "codex", "pi", "cursor", "copilot"] {
+    for agent in ["claude", "codex", "grok", "pi", "cursor", "copilot"] {
         let mut sidecar = AcpxSidecarTransport::start_for_agent(
             &AcpxSidecarTransportConfig {
                 command: PathBuf::from(env!("CARGO_BIN_EXE_fake-acpx-sidecar")),
@@ -337,6 +339,7 @@ fn assigned_gateway_binding_reaches_qualified_sidecar_without_unrelated_secrets(
         let expected = match agent {
             "claude" => vec!["ANTHROPIC_API_KEY", "CLAUDE_CODE_OAUTH_TOKEN"],
             "codex" => vec!["OPENAI_API_KEY", "CODEX_API_KEY"],
+            "grok" => vec!["XAI_API_KEY", "GROK_MODELS_BASE_URL"],
             "pi" => vec![
                 "OPENROUTER_API_KEY",
                 "GEMINI_API_KEY",

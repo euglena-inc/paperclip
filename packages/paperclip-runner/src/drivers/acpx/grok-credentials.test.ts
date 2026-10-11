@@ -79,6 +79,11 @@ describe("Grok isolated credentials", () => {
     const result = createSanitizedAcpxSpawnInput({ XAI_API_KEY: "selected", HOME: "/host", GROK_HOME: "/host/.grok", OPENAI_API_KEY: "other", PAPERCLIP_ACPX_GROK_AUTH_JSON_SECRET: credential }, "grok");
     expect(result.env).toEqual({ XAI_API_KEY: "selected" });
   });
+  it("retains the configured Grok gateway while removing unrelated provider credentials", () => {
+    const result = createSanitizedAcpxSpawnInput({ XAI_API_KEY: "selected", GROK_MODELS_BASE_URL: "https://gateway.example/v1", OPENAI_API_KEY: "unrelated", GROK_HOME: "/host" }, "grok");
+    expect(result.env).toEqual({ XAI_API_KEY: "selected", GROK_MODELS_BASE_URL: "https://gateway.example/v1" });
+    expect(createSanitizedAcpxSpawnInput({ GROK_MODELS_BASE_URL: "https://gateway.example/v1" }, "claude").env).not.toHaveProperty("GROK_MODELS_BASE_URL");
+  });
   it("cannot pass model verification with a missing or mismatched model", async () => {
     const profile = resolveQualifiedAcpxProfile("grok", "grok-4.7");
     for (const status of [{}, { models: { currentModelId: "grok-other" } }]) {

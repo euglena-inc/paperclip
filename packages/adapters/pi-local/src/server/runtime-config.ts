@@ -16,11 +16,9 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 
 // Recursively replace {env:VAR} placeholders with the resolved value. Used to bake
 // gateway provider secrets (e.g. an LLM-gateway virtual key) into models.json
-// SERVER-SIDE, where the value is reliably present. Pi resolves a provider apiKey
-// by trying it as an env var name first, then as a literal -- but the (possibly
-// sandboxed) run process env plumbing is not guaranteed to carry the key, so we
-// resolve it here. Unresolvable placeholders are left intact; an env var set to
-// an empty string counts as unresolvable (the placeholder stays for Pi to try).
+// server-side for legacy configs. Native Pi $VAR / ${VAR} templates are left
+// unchanged and resolve from the execution environment. Unresolvable legacy
+// placeholders remain intact; an empty environment value is unresolved.
 function expandEnvPlaceholders<T>(value: T, resolve: (name: string) => string | undefined): T {
   if (typeof value === "string") {
     return value.replace(/\{env:([A-Za-z_][A-Za-z0-9_]*)\}/g, (match, name: string) => {
@@ -100,8 +98,8 @@ function parseProviderConfig(
 //
 // When PAPERCLIP_PI_PROVIDERS is set we write {"providers": ...} to a fresh temp
 // dir and point PI_CODING_AGENT_DIR at it; the managed dir intentionally replaces
-// the host agent dir (credentials travel inside the providers config itself, via
-// a literal apiKey or a server-side-expanded {env:VAR} placeholder). For remote
+// the host agent dir. Managed connections use native environment references;
+// legacy configs may contain literal or expanded {env:VAR} values. For remote
 // execution targets, execute.ts ships the dir to the sandbox as a runtime asset
 // and repoints PI_CODING_AGENT_DIR at the in-sandbox copy.
 export async function preparePiRuntimeConfig(input: {

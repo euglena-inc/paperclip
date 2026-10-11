@@ -113,11 +113,14 @@ function Setup({
   const appearanceDraft = useAgentAppearanceDraft(`${companyId}:new-agent`);
   const isRunner = adapterType === "paperclip_runner";
   const isDot = isRunner && runnerProvider === "openai_dot";
+  const acpxRunner = isRunner && ["claude", "grok", "pi"].includes(runnerProvider);
   const brandType = isDot ? "openai_dot" : isRunner
     ? runnerProvider === "grok"
       ? "grok_local"
       : runnerProvider === "claude"
       ? "claude_local"
+      : runnerProvider === "pi"
+        ? "pi_local"
       : runnerProvider === "opencode"
         ? "opencode_local"
         : "codex_local"
@@ -355,9 +358,10 @@ function Setup({
       ...(isRunner
         ? {
             adapterSchemaValues: {
-              provider: (runnerProvider === "claude" || runnerProvider === "grok") ? "acpx" : runnerProvider,
+              provider: acpxRunner ? "acpx" : runnerProvider,
               ...(isDot ? { allowUnmeteredProvider } : {}),
-              ...((runnerProvider === "claude" || runnerProvider === "grok") ? { acpxAgent: runnerProvider } : {}),
+              ...(runnerProvider === "pi" ? { piThinkingLevel: "off" } : {}),
+              ...(acpxRunner ? { acpxAgent: runnerProvider } : {}),
             },
           }
         : {}),
@@ -365,8 +369,8 @@ function Setup({
     const config = getUIAdapter(adapterType).buildAdapterConfig(values);
     if (isRunner)
       Object.assign(config, {
-        provider: (runnerProvider === "claude" || runnerProvider === "grok") ? "acpx" : runnerProvider,
-        ...((runnerProvider === "claude" || runnerProvider === "grok") ? { acpxAgent: runnerProvider } : {}),
+        provider: acpxRunner ? "acpx" : runnerProvider,
+        ...(acpxRunner ? { acpxAgent: runnerProvider } : {}),
         ...(model ? { model } : {}),
       });
     if (!aiBinding && !nextConnection?.aiConnection && hasCredentialField && binding) {
