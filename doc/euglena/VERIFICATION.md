@@ -88,6 +88,11 @@ than matching the marker in the input prompt.
 | Hermes | `c0efd203-961b-4465-8198-c2afee319b20` | Succeeded, exit 0; `HERMES_NEWAPI_OK`; EUG-4 done |
 | Runner OpenCode (earlier evidence) | `6b79e170-64d4-428f-8e63-ef93ec7e092b` | Succeeded; `RUNNER_NEWAPI_OK` |
 
+After removing the temporary diagnostic code and rebuilding/replacing the main
+listener, Native Pi passed again: run `affccc89-6f06-4b08-a702-d239123ac4dd`
+succeeded, returned `NATIVE_PI_NEWAPI_OK`, and completed EUG-6. This second run
+used the clean final executable source in `f36993ba2`.
+
 Native Pi's initial failure was a package-authority mismatch: the launch bound
 the dependency workspace root while its manifest belonged to the Runner
 package. Native asset discovery now binds the manifest's owning directory;
